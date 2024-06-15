@@ -24,10 +24,6 @@ points = [
 
 
 
-projectionMatrix = np.matrix([[1, 0, 0],
-                              [0, 1, 0],
-                              [0, 0, 1],
-                              ])
 clock = pygame.time.Clock()
 
 def connect(a, b, points):
@@ -55,7 +51,15 @@ while True:
     for point in points:
         scale = 200.
         rotations = rotationY
-        pos = projectionMatrix * (rotationX * (rotationY * (rotationZ * point.reshape((3, 1))))) * scale
+        
+        rotated = (rotationX * (rotationY * (rotationZ * point.reshape((3, 1)))))
+        distance = 1.5
+        z = 1 / (rotated[2, 0] - distance)
+        projectionMatrix = np.matrix([[z, 0, 0],
+                                    [0, z, 0],
+                                    [0, 0, 1],
+                                    ])
+        pos = projectionMatrix * rotated * scale
         # pos = projectionMatrix * (rotations * point.reshape((3, 1))) * scale
         projected.append((int(pos[0][0]+sw/2), int(pos[1][0]+sh/2)))
     
