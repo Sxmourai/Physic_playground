@@ -11,7 +11,8 @@ import pygame
 pygame.init()
 sw, sh = 1920, 1080
 screen = pygame.display.set_mode((sw, sh))
-pygame.display.set_caption("4d projection !")
+DIMS = 4
+pygame.display.set_caption(f"{DIMS}d projection !")
 
 simulation_angle = 0
 
@@ -30,35 +31,35 @@ def obj(n) -> np.matrix:
     inverted = np.insert(sub_cube, columns, -.5, 1)
     return np.concatenate((normal, inverted))
 
-points = obj(4)
+points = obj(DIMS)
 slider = Slider(screen, 30, 30, 200, 20, min=0, max=10, step=.01, initial=1.5)
 
 camera_rotation = (300.,150)
 
+# Generates a transformation matrix from coordinates of sines and cosines
+# Coordinates are (x,y)
+def rotation_matrix(angle, cos1: tuple[int, int], cos2, sin_coord, minus_sin, dims: int=DIMS):
+    matrix = mat(np.zeros((dims, dims)))
+    for i in range(dims): # Diagonal ones
+        matrix[i, i] = 1
+    matrix[cos1[1], cos1[0]] = cos(angle)
+    matrix[cos2[1], cos2[0]] = cos(angle)
+    matrix[sin_coord[1], sin_coord[0]] = sin(angle)
+    matrix[minus_sin[1], minus_sin[0]] = -sin(angle)
+    return matrix
+
+# Same as
+# return mat([[cos(angle), -sin(angle), 0],
+#                  [sin(angle), cos(angle), 0],
+#                  [0, 0, 1]])
 def get_rotationXX(angle):
-    return np.array([[1, 0, 0, 0],
-                          [0, cos(angle), -sin(angle), 0],
-                          [0, sin(angle), cos(angle), 0],
-                          [0, 0, 0, 1],
-                          ])
+    return rotation_matrix(angle, cos1=(1,1), cos2=(2,2), sin_coord=(1,2), minus_sin=(2,1))
 def get_rotationXZ(angle):
-    return np.array([[cos(angle), 0, sin(angle), 0],
-                          [0, 1, 0, 0],
-                          [-sin(angle), 0, cos(angle), 0],
-                          [0, 0, 0, 1],
-    ])
+    return rotation_matrix(angle, cos1=(0,0), cos2=(2,2), sin_coord=(2,0), minus_sin=(0,2))
 def get_rotationXY(angle):
-    return np.array([[cos(angle), -sin(angle), 0, 0],
-                          [sin(angle), cos(angle), 0, 0],
-                          [0, 0, 1, 0],
-                          [0, 0, 0, 1],
-                          ])
+    return rotation_matrix(angle, cos1=(0,0), cos2=(1,1), sin_coord=(0,1), minus_sin=(1,0))
 def get_rotationZW(angle):
-    return np.array([[1, 0, 0, 0],
-                    [0, 1, 0, 0],
-                    [0, 0, cos(angle), -sin(angle)],
-                    [0, 0, sin(angle), cos(angle)],
-                    ])
+    return rotation_matrix(angle, cos1=(2,2), cos2=(3,3), sin_coord=(2,3), minus_sin=(3,2))
 
 def project(points):
     rotationZW = get_rotationZW(simulation_angle)
@@ -69,14 +70,11 @@ def project(points):
     for point in points:
         scale = 200.
         distance = slider.getValue()
-        w = 1 / (distance - point[0, 3])
-        projectionMatrix = mat([[w, 0, 0, 0],
-                                    [0, w, 0, 0],
-                                    [0, 0, w, 0],
-                                    [0, 0, 0, 0],
-                                    ])
-        p = point.reshape((4, 1))
+        p = point.reshape((DIMS, 1))
         rotated = camera_rot_matrix[1] * (camera_rot_matrix[0] * (rotationZW * (rotationXY * p)))
+        w = 1 / (distance - rotated[DIMS-1])
+        projectionMatrix = np.zeros((DIMS,DIMS))
+        np.fill_diagonal(projectionMatrix, w)
         pos = (projectionMatrix * rotated) * scale
         projected.append((int(pos[0, 0]+sw/2), int(pos[1, 0]+sh/2)))
 
@@ -121,39 +119,5 @@ while True:
             camera_rotation = (camera_rotation[0] + event.rel[0]/100, camera_rotation[1] + event.rel[1]/100)
     pygame_widgets.update(evs)
     pygame.display.flip()
-    # print(clock.get_fps())
     simulation_angle += clock.tick(100)/1000
 
-
-# Tesseract / Hypercube
-# points = mat([
-#     [ .5,  .5, -.5,  .5],
-#     [ .5, -.5, -.5,  .5],
-#     [-.5,  .5, -.5,  .5],
-#     [-.5, -.5, -.5,  .5],
-#     [ .5,  .5,  .5,  .5],
-#     [ .5, -.5,  .5,  .5],
-#     [-.5,  .5,  .5,  .5],
-#     [-.5, -.5,  .5,  .5],
-
-#     [ .5,  .5, -.5, -.5],
-#     [ .5, -.5, -.5, -.5],
-#     [-.5,  .5, -.5, -.5],
-#     [-.5, -.5, -.5, -.5],
-#     [ .5,  .5,  .5, -.5],
-#     [ .5, -.5,  .5, -.5],
-#     [-.5,  .5,  .5, -.5],
-#     [-.5, -.5,  .5, -.5],
-# ])
-
-# Cube
-# points = mat([
-#     [ .5,  .5, -.5],
-#     [ .5, -.5, -.5],
-#     [-.5,  .5, -.5],
-#     [-.5, -.5, -.5],
-#     [ .5,  .5,  .5],
-#     [ .5, -.5,  .5],
-#     [-.5,  .5,  .5],
-#     [-.5, -.5,  .5],
-# ])

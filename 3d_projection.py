@@ -26,16 +26,6 @@ def obj(n) -> np.matrix:
     return np.concatenate((normal, inverted))
 
 
-points = mat([
-    [ .5,  .5, -.5],
-    [ .5, -.5, -.5],
-    [-.5,  .5, -.5],
-    [-.5, -.5, -.5],
-    [ .5,  .5,  .5],
-    [ .5, -.5,  .5],
-    [-.5,  .5,  .5],
-    [-.5, -.5,  .5],
-])
 points = obj(3)
 
 
