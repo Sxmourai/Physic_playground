@@ -12,14 +12,14 @@ pygame.display.set_caption("3d projection !")
 
 angle = 0
 points = [
-    mat([ 1.,  1., -1]),
-    mat([ 1., -1., -1]),
-    mat([-1.,  1., -1]),
-    mat([-1., -1., -1]),
-    mat([ 1.,  1., 1.]),
-    mat([ 1., -1., 1.]),
-    mat([-1.,  1., 1.]),
-    mat([-1., -1., 1.]),
+    mat([ .5,  .5, -.5]),
+    mat([ .5, -.5, -.5]),
+    mat([-.5,  .5, -.5]),
+    mat([-.5, -.5, -.5]),
+    mat([ .5,  .5,  .5]),
+    mat([ .5, -.5,  .5]),
+    mat([-.5,  .5,  .5]),
+    mat([-.5, -.5,  .5]),
 ]
 
 
@@ -29,6 +29,13 @@ projectionMatrix = np.matrix([[1, 0, 0],
                               [0, 0, 1],
                               ])
 clock = pygame.time.Clock()
+
+def connect(a, b, points):
+    p1x,p1y = points[a][0:2]
+    p2x,p2y = points[b][0:2]
+    pygame.draw.aaline(screen, (255,255,255), (p1x, p1y),(p2x, p2y), 3)
+
+
 while True:
     screen.fill((0, 0, 0))
     rotation2d = np.array([[cos(angle), -sin(angle), 0],
@@ -46,24 +53,23 @@ while True:
     
     projected = []
     for point in points:
-        scale = 100.
+        scale = 200.
         rotations = rotationY
-        pos = projectionMatrix * (rotationZ * (rotationX * (rotationY * point.reshape((3, 1))))) * scale
+        pos = projectionMatrix * (rotationX * (rotationY * (rotationZ * point.reshape((3, 1))))) * scale
         # pos = projectionMatrix * (rotations * point.reshape((3, 1))) * scale
         projected.append((int(pos[0][0]+sw/2), int(pos[1][0]+sh/2)))
     
     for i,(p1x, p1y) in enumerate(projected):
         pygame.draw.circle(screen, (255,255,255), (p1x, p1y), 10.)
         p1 = points[i]
-        for j,(p2x,p2y) in enumerate(projected):
+        for j,(p2x, p2y) in enumerate(projected):
+            if i==j:continue
             p2 = points[j]
-            dx = abs(p1[0, 0]-p2[0, 0])
-            dy = abs(p1[0, 1]-p2[0, 1])
-            dz = abs(p1[0, 2]-p2[0, 2])
-            if (dx != 0 and dy != 0) or (dy != 0 and dz != 0) or (dx != 0 and dz != 0):
-                continue
-            pygame.draw.aaline(screen, (255,255,255), (p1x, p1y),(p2x, p2y), 3)
-            
+            dst = (p2-p1)
+            length = dst.dot(np.squeeze(np.asarray(dst)))
+            if length <= 1:
+                connect(i,j, projected)
+
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
