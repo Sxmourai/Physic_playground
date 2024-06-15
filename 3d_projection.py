@@ -53,13 +53,15 @@ while True:
         rotations = rotationY
         
         rotated = (rotationX * (rotationY * (rotationZ * point.reshape((3, 1)))))
-        distance = 1.5
-        z = 1 / (rotated[2, 0] - distance)
+        distance = 1.0
+        # Perspective:
+        # z = 1 / (rotated[2, 0] - distance)
+        z = 1
         projectionMatrix = np.matrix([[z, 0, 0],
                                     [0, z, 0],
                                     [0, 0, 1],
                                     ])
-        pos = projectionMatrix * rotated * scale
+        pos = projectionMatrix * rotated * scale * distance # Scale by distance so we always have same size, but we have a different perspective effect
         # pos = projectionMatrix * (rotations * point.reshape((3, 1))) * scale
         projected.append((int(pos[0][0]+sw/2), int(pos[1][0]+sh/2)))
     
