@@ -48,6 +48,53 @@ def rotation_matrix(angle, cos1: tuple[int, int], cos2, sin_coord, minus_sin, di
     matrix[minus_sin[1], minus_sin[0]] = -sin(angle)
     return matrix
 
+def R(mat: np.matrix, row: int, col: int, angle: float):
+    mR = np.matrix(np.zeros(mat.shape))
+    for m in range(mR.shape[0]):
+        for n in range(mR.shape[1]):
+            if m == row and n == row:
+                mR[m, n] = cos(angle)
+            elif m == col and n == col:
+                mR[m, n] = -sin(angle)
+            elif m == row and n == col:
+                mR[m, n] = -sin(angle)
+            elif m == col and n == row:
+                mR[m, n] = sin(angle)
+            elif m == n and m != row and n != col:
+                mR[m, n] = 1
+
+    return mR
+
+def invert(matrix):
+    return mat([[1/float(x[0]) for x in line] for line in matrix])
+
+# Following Aguilera-Pérez Algorithm at http://wscg.zcu.cz/wscg2004/Papers_2004_Short/N29.pdf
+def rotate(mat: np.matrix, angle: float, n: int):
+    if n <= 2:
+        if n == 0:
+            return np.array(mat) * np.array(R(mat, n, 2, angle)) * np.array(invert(mat))
+        else:
+            return np.array(mat) * np.array(R(mat, n - 1, n, angle)) * np.array(invert(mat))
+    
+    mM = np.zeroes(mat.shape)
+    v = np.zeroes(mat.shape)
+    v[0] = mat
+    mM[1] = invert(mat)
+    v[1] = mat * mM[1]
+    mM[0] = mM[1]
+    
+    k = 1
+    for r in range(2, n, 1):
+        c = n
+        while c >= r:
+            c -= 1
+            k += 1
+            mM[k] = R(mat, c, c-1, atan2(v[k-1][r, c], v[k-1][r, c-1]))
+            v[k] = v[k-1] * mM[k]
+            mM[0] *= mM[k]
+            
+    return mM[0] * R(mat, n - 1, n, angle) * invert(mM[0])
+
 # Same as
 # return mat([[cos(angle), -sin(angle), 0],
 #                  [sin(angle), cos(angle), 0],
@@ -71,7 +118,7 @@ def project(points):
         scale = 200.
         distance = slider.getValue()
         p = point.reshape((DIMS, 1))
-        rotated = camera_rot_matrix[1] * (camera_rot_matrix[0] * (rotationZW * (rotationXY * p)))
+        rotated = camera_rot_matrix[1] * (camera_rot_matrix[0] * (rotationZW * (rotate(p, simulation_angle, 1))))
         w = 1 / (distance - rotated[DIMS-1])
         projectionMatrix = np.zeros((DIMS,DIMS))
         np.fill_diagonal(projectionMatrix, w)
