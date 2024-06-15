@@ -14,25 +14,45 @@ screen = pygame.display.set_mode((sw, sh))
 pygame.display.set_caption("4d projection !")
 
 simulation_angle = 0
-points = [
-    mat([ .5,  .5, -.5,  .5]),
-    mat([ .5, -.5, -.5,  .5]),
-    mat([-.5,  .5, -.5,  .5]),
-    mat([-.5, -.5, -.5,  .5]),
-    mat([ .5,  .5,  .5,  .5]),
-    mat([ .5, -.5,  .5,  .5]),
-    mat([-.5,  .5,  .5,  .5]),
-    mat([-.5, -.5,  .5,  .5]),
 
-    mat([ .5,  .5, -.5, -.5]),
-    mat([ .5, -.5, -.5, -.5]),
-    mat([-.5,  .5, -.5, -.5]),
-    mat([-.5, -.5, -.5, -.5]),
-    mat([ .5,  .5,  .5, -.5]),
-    mat([ .5, -.5,  .5, -.5]),
-    mat([-.5,  .5,  .5, -.5]),
-    mat([-.5, -.5,  .5, -.5]),
-]
+# Generates an object in n dimensions (2 = square, 3=cube, 4=hypercube ...)
+def obj(n) -> np.matrix:
+    if n == 2:
+        return mat([
+            [ .5,  .5],
+            [ .5, -.5],
+            [-.5,  .5],
+            [-.5, -.5],
+        ])
+    sub_cube = obj(n-1)
+    columns = np.shape(sub_cube)[1]
+    normal = np.insert(sub_cube, columns, .5, 1)
+    inverted = np.insert(sub_cube, columns, -.5, 1)
+    return np.concatenate((normal, inverted))
+
+
+
+points = mat([
+    [ .5,  .5, -.5,  .5],
+    [ .5, -.5, -.5,  .5],
+    [-.5,  .5, -.5,  .5],
+    [-.5, -.5, -.5,  .5],
+    [ .5,  .5,  .5,  .5],
+    [ .5, -.5,  .5,  .5],
+    [-.5,  .5,  .5,  .5],
+    [-.5, -.5,  .5,  .5],
+
+    [ .5,  .5, -.5, -.5],
+    [ .5, -.5, -.5, -.5],
+    [-.5,  .5, -.5, -.5],
+    [-.5, -.5, -.5, -.5],
+    [ .5,  .5,  .5, -.5],
+    [ .5, -.5,  .5, -.5],
+    [-.5,  .5,  .5, -.5],
+    [-.5, -.5,  .5, -.5],
+])
+
+points = obj(4)
 
 slider = Slider(screen, 30, 30, 200, 20, min=0, max=10, step=.01)
 
@@ -58,10 +78,10 @@ def get_rotationXY(angle):
                           ])
 def get_rotationZW(angle):
     return np.array([[1, 0, 0, 0],
-                          [0, 1, 0, 0],
-                          [0, 0, cos(angle), -sin(angle)],
-                          [0, 0, sin(angle), cos(angle)],
-                          ])
+                    [0, 1, 0, 0],
+                    [0, 0, cos(angle), -sin(angle)],
+                    [0, 0, sin(angle), cos(angle)],
+                    ])
 
 def project(points):
     rotationZW = get_rotationZW(simulation_angle)
@@ -73,16 +93,14 @@ def project(points):
         scale = 200.
         distance = slider.getValue()
         w = 1 / (distance - point[0, 3])
-        projectionMatrix = np.matrix([[w, 0, 0, 0],
+        projectionMatrix = mat([[w, 0, 0, 0],
                                     [0, w, 0, 0],
                                     [0, 0, w, 0],
                                     [0, 0, 0, 0],
                                     ])
         p = point.reshape((4, 1))
-
         rotated = camera_rot_matrix[1] * (camera_rot_matrix[0] * (rotationZW * (rotationXY * p)))
         pos = (projectionMatrix * rotated) * scale
-        # print(rotated,pos)
         projected.append((int(pos[0, 0]+sw/2), int(pos[1, 0]+sh/2)))
 
     return projected
@@ -126,5 +144,5 @@ while True:
             camera_rotation = (camera_rotation[0] + event.rel[0]/100, camera_rotation[1] + event.rel[1]/100)
     pygame_widgets.update(evs)
     pygame.display.flip()
-    print(clock.get_fps())
-    simulation_angle += clock.tick(200)/1000
+    # print(clock.get_fps())
+    simulation_angle += clock.tick(100)/1000
