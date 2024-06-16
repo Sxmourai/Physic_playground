@@ -7,7 +7,7 @@ from pygame import Vector2 as vec2
 pygame.init()
 sw, sh = 1520, 980
 screen = pygame.display.set_mode((sw, sh))
-pygame.display.set_caption("3d projection !")
+pygame.display.set_caption("Base project !")
 
 clock = pygame.time.Clock()
 while True:
